@@ -17,8 +17,8 @@
   --grad-soft: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(236, 72, 153, 0.16) 55%, rgba(245, 158, 11, 0.12));
   --radius: 20px;
   --radius-sm: 14px;
-  --font: "Manrope", system-ui, -apple-system, sans-serif;
-  --display: "Unbounded", "Manrope", system-ui, sans-serif;
+  --font: "Manrope Variable", "Manrope", system-ui, -apple-system, sans-serif;
+  --display: "Unbounded Variable", "Unbounded", "Manrope Variable", system-ui, sans-serif;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   color-scheme: dark;
 }
