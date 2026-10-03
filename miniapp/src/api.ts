@@ -2,13 +2,18 @@ export interface Pack { id: string; tokens: number; priceRub: number }
 export interface Occasion { id: string; emoji: string; title: string }
 export interface Me { id: number; balance: number; songCost: number; packs: Pack[]; occasions: Occasion[]; subscribed: boolean; channels: string[] }
 export interface Song {
-  id: number; title: string; lyrics: string; style: string;
+  id: number; title: string; lyrics: string; style: string; occasion: string;
   status: "draft" | "generating" | "done" | "failed"; audioUrl: string | null;
 }
 
 declare global {
   interface Window {
-    WebApp?: { initData: string; ready(): void; openLink(url: string): void };
+    WebApp?: {
+      initData: string;
+      ready(): void;
+      openLink(url: string): void;
+      HapticFeedback?: { impactOccurred?: (style: string) => void };
+    };
   }
 }
 

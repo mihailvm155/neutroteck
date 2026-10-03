@@ -2,6 +2,8 @@
 import { OCCASIONS } from "../../server/src/occasions";
 import type { Me, Song } from "./api";
 
+const TITLES = ["Лучшая на свете", "Наш общий припев", "Тёплые слова", "Розовый бочок"];
+
 const LYRICS = `[Verse]
 Я нашёл его в коробке под своим окном,
 То ли тапок с ушами, то ли странный гном.
@@ -30,7 +32,7 @@ const me: Me = {
 };
 
 const songs: Song[] = [
-  { id: 1, title: "Оилиоп", lyrics: LYRICS, style: "pop", status: "done", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { id: 1, title: "Оилиоп", lyrics: LYRICS, style: "pop", occasion: "Для питомца", status: "done", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
 ];
 let nextId = 2;
 const delay = <T,>(v: T, ms = 600) => new Promise<T>((r) => setTimeout(() => r(v), ms));
@@ -39,8 +41,9 @@ export const demoApi = {
   me: () => delay({ ...me }, 100),
   songs: () => delay([...songs].reverse(), 100),
   song: (id: number) => delay(songs.find((s) => s.id === id)!, 100),
-  create: (story: string) => {
-    const s: Song = { id: nextId++, title: story.split(/\s+/).slice(0, 2).join(" ") || "Песня", lyrics: LYRICS, style: "pop", status: "draft", audioUrl: null };
+  create: (_story: string, occasionId: string, custom: string) => {
+    const occasion = occasionId === "custom" ? custom : (OCCASIONS.find((o) => o.id === occasionId)?.title ?? "");
+    const s: Song = { id: nextId, title: TITLES[nextId++ % TITLES.length]!, lyrics: LYRICS, style: "pop", occasion, status: "draft", audioUrl: null };
     songs.push(s);
     return delay({ ...s }, 1200);
   },
