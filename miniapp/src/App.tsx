@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, webApp, type Me, type Song } from "./api";
+import { api, webApp, type Me, type Occasion, type Song } from "./api";
 
 type Screen = "home" | "create" | "draft" | "topup" | "songs";
 
@@ -62,8 +62,8 @@ export function App() {
         </>
       )}
 
-      {screen === "create" && <Create busy={!!busy} onSubmit={(story) =>
-        run("Пишу текст…", async () => { setDraft(await api.create(story)); setScreen("draft"); })} />}
+      {screen === "create" && <Create occasions={me.occasions} busy={!!busy} onSubmit={(story, occ, custom) =>
+        run("Пишу текст…", async () => { setDraft(await api.create(story, occ, custom)); setScreen("draft"); })} />}
 
       {screen === "draft" && draft && (
         <Draft song={draft} busy={!!busy}
@@ -89,10 +89,30 @@ export function App() {
   );
 }
 
-function Create({ onSubmit, busy }: { onSubmit: (s: string) => void; busy: boolean }) {
+function Create({ occasions, onSubmit, busy }: {
+  occasions: Occasion[]; busy: boolean; onSubmit: (story: string, occasionId: string, custom: string) => void;
+}) {
+  const [occ, setOcc] = useState("");
+  const [custom, setCustom] = useState("");
   const [text, setText] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? occasions : occasions.slice(0, 12);
+  const ready = text.trim() && occ && (occ !== "custom" || custom.trim());
   return (
     <>
+      <h2>Для кого песня? Выберите повод</h2>
+      <div className="chips">
+        {visible.map((o) => (
+          <button key={o.id} className={"chip" + (occ === o.id ? " on" : "")} onClick={() => setOcc(o.id)}>
+            {o.emoji} {o.title}
+          </button>
+        ))}
+        {!showAll && <button className="chip" onClick={() => setShowAll(true)}>Ещё поводы ▾</button>}
+        <button className={"chip" + (occ === "custom" ? " on" : "")} onClick={() => setOcc("custom")}>✍️ Свой вариант</button>
+      </div>
+      {occ === "custom" && (
+        <input value={custom} maxLength={100} onChange={(e) => setCustom(e.target.value)} placeholder="Например: проводы коллеги в декрет" />
+      )}
       <h2>Расскажите о герое</h2>
       <ul>
         <li>Как зовут героя или героиню?</li>
@@ -101,7 +121,7 @@ function Create({ onSubmit, busy }: { onSubmit: (s: string) => void; busy: boole
         <li>Что передать треком — любовь, угар, благодарность?</li>
       </ul>
       <textarea rows={8} value={text} onChange={(e) => setText(e.target.value)} placeholder="Пишите всё, что может вдохновить…" />
-      <button disabled={busy || !text.trim()} onClick={() => onSubmit(text)}>Написать текст</button>
+      <button disabled={busy || !ready} onClick={() => onSubmit(text, occ, custom)}>Написать текст</button>
     </>
   );
 }

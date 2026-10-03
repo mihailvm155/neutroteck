@@ -9,6 +9,7 @@ export interface User {
   state: string;
   balance: number;
   current_song_id: number | null;
+  occasion: string;
   created_at: number;
 }
 
@@ -16,6 +17,7 @@ export interface Song {
   id: number;
   user_id: number;
   story: string;
+  occasion: string;
   title: string;
   style: string;
   lyrics: string;
@@ -71,7 +73,15 @@ export function openDb(path: string): DatabaseSync {
       created_at INTEGER NOT NULL
     );
   `);
+  addColumn(db, "users", "occasion", "TEXT NOT NULL DEFAULT ''");
+  addColumn(db, "songs", "occasion", "TEXT NOT NULL DEFAULT ''");
   return db;
+}
+
+/** Мини-миграция для баз, созданных до появления колонки. */
+function addColumn(db: DatabaseSync, table: string, column: string, ddl: string) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as unknown as { name: string }[];
+  if (!cols.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
 }
 
 /** Тонкая обёртка с типизированными запросами. */
@@ -99,6 +109,10 @@ export class Store {
     }
   }
 
+  setOccasion(id: number, occasion: string): void {
+    this.db.prepare("UPDATE users SET occasion = ? WHERE id = ?").run(occasion, id);
+  }
+
   /** Атомарно списывает токены. false — если не хватает. */
   debit(id: number, amount: number): boolean {
     const r = this.db
@@ -112,10 +126,10 @@ export class Store {
     this.db.prepare("UPDATE users SET balance = balance + ? WHERE id = ?").run(amount, id);
   }
 
-  createSong(userId: number, story: string): Song {
+  createSong(userId: number, story: string, occasion = ""): Song {
     const r = this.db
-      .prepare("INSERT INTO songs (user_id, story, created_at) VALUES (?, ?, ?)")
-      .run(userId, story, Date.now());
+      .prepare("INSERT INTO songs (user_id, story, occasion, created_at) VALUES (?, ?, ?, ?)")
+      .run(userId, story, occasion, Date.now());
     return this.getSong(Number(r.lastInsertRowid))!;
   }
 

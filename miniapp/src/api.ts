@@ -1,5 +1,6 @@
 export interface Pack { id: string; tokens: number; priceRub: number }
-export interface Me { id: number; balance: number; songCost: number; packs: Pack[]; subscribed: boolean; channels: string[] }
+export interface Occasion { id: string; emoji: string; title: string }
+export interface Me { id: number; balance: number; songCost: number; packs: Pack[]; occasions: Occasion[]; subscribed: boolean; channels: string[] }
 export interface Song {
   id: number; title: string; lyrics: string; style: string;
   status: "draft" | "generating" | "done" | "failed"; audioUrl: string | null;
@@ -27,7 +28,8 @@ export const api = {
   me: () => req<Me>("GET", "/api/me"),
   songs: () => req<Song[]>("GET", "/api/songs"),
   song: (id: number) => req<Song>("GET", `/api/songs/${id}`),
-  create: (story: string) => req<Song>("POST", "/api/songs", { story }),
+  create: (story: string, occasionId: string, customOccasion: string) =>
+    req<Song>("POST", "/api/songs", { story, occasionId, customOccasion }),
   revise: (id: number, feedback: string) => req<Song>("POST", `/api/songs/${id}/revise`, { feedback }),
   confirm: (id: number) => req<Song>("POST", `/api/songs/${id}/confirm`),
   pay: (packId: string) => req<{ url: string }>("POST", "/api/pay", { packId }),

@@ -13,3 +13,7 @@ textarea { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #8
 .card audio { width: 100%; }
 .error { color: #d33; } .busy { color: var(--accent); }
 h2 { margin: 4px 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { width: auto; padding: 8px 12px; border-radius: 20px; background: var(--muted); color: var(--fg); border: 1px solid #8884; }
+.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #8884; background: var(--muted); color: inherit; font: inherit; }

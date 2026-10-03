@@ -1,6 +1,7 @@
 import { PACKS, SONG_COST, config } from "../config.js";
 import { Core, CoreError } from "../core.js";
 import type { Song } from "../db.js";
+import { CUSTOM_OCCASION_ID, OCCASIONS, occasionTitle } from "../occasions.js";
 import { MaxApi, type Keyboard, type Update } from "./api.js";
 
 const FAQ = `❓ FAQ
@@ -11,6 +12,8 @@ const FAQ = `❓ FAQ
 • Генерация занимает 1–3 минуты.`;
 
 const TARIFFS = `🔥 Выберите тариф\n\n🎵 Песня — ${SONG_COST} токенов`;
+
+const OCC_PAGE_SIZE = 12;
 
 const mainKb = (): Keyboard => {
   const rows: Keyboard = [
@@ -53,6 +56,8 @@ export class Bot {
   }
 
   async handle(u: Update): Promise<void> {
+    const uid = u.user?.user_id ?? u.message?.sender?.user_id ?? u.callback?.user.user_id;
+    if (uid) this.core.store.ensureUser(uid);
     if (u.update_type === "bot_started" && u.user) {
       return this.start(u.user.user_id);
     }
@@ -111,6 +116,40 @@ export class Bot {
     await this.api.send(userId, TARIFFS, kb);
   }
 
+  private async occasions(userId: number, page: number) {
+    const pages = Math.ceil(OCCASIONS.length / OCC_PAGE_SIZE);
+    page = Math.min(Math.max(page, 0), pages - 1);
+    const items = OCCASIONS.slice(page * OCC_PAGE_SIZE, (page + 1) * OCC_PAGE_SIZE);
+    const kb: Keyboard = [];
+    for (let i = 0; i < items.length; i += 2) {
+      kb.push(
+        items.slice(i, i + 2).map((o) => ({ type: "callback", text: `${o.emoji} ${o.title}`, payload: `occ:${o.id}` }) as const),
+      );
+    }
+    const nav: Keyboard[number] = [];
+    if (page > 0) nav.push({ type: "callback", text: "◀️ Назад", payload: `occp:${page - 1}` });
+    nav.push({ type: "callback", text: `${page + 1}/${pages}`, payload: `occp:${page}` });
+    if (page < pages - 1) nav.push({ type: "callback", text: "Ещё поводы ▶️", payload: `occp:${page + 1}` });
+    kb.push(nav);
+    kb.push([{ type: "callback", text: "✍️ Свой вариант", payload: `occ:${CUSTOM_OCCASION_ID}` }]);
+    kb.push([{ type: "callback", text: "В меню", payload: "home" }]);
+    this.core.store.setState(userId, "idle");
+    await this.api.send(userId, "Для кого песня? Выбери повод 👇", kb);
+  }
+
+  private async askStory(userId: number) {
+    this.core.store.setState(userId, "awaiting_story");
+    await this.api.send(
+      userId,
+      "Ну а теперь самое главное! Сделаем песню по-настоящему личной 🎯\n\n" +
+        "💬 Напиши всё, что может вдохновить:\n" +
+        "– Как зовут героя или героиню песни?\n" +
+        "– Чем он/она запомнился? Какие фишки?\n" +
+        "– Есть ли смешные истории или любимые фразы?\n" +
+        "– Что хочется передать этим треком — любовь, угар, благодарность?",
+    );
+  }
+
   private async showDraft(userId: number, song: Song) {
     this.core.store.setState(userId, "reviewing", song.id);
     await this.api.send(userId, `${song.lyrics}`, [
@@ -143,16 +182,19 @@ export class Bot {
         ]));
       }
       case "create":
-        this.core.store.setState(userId, "awaiting_story");
-        return void (await this.api.send(
-          userId,
-          "Ну а теперь самое главное! Сделаем песню по-настоящему личной 🎯\n\n" +
-            "💬 Напиши всё, что может вдохновить:\n" +
-            "– Как зовут героя или героиню песни?\n" +
-            "– Чем он/она запомнился? Какие фишки?\n" +
-            "– Есть ли смешные истории или любимые фразы?\n" +
-            "– Что хочется передать этим треком — любовь, угар, благодарность?",
-        ));
+        return this.occasions(userId, 0);
+      case "occp":
+        return this.occasions(userId, Number(arg) || 0);
+      case "occ": {
+        if (arg === CUSTOM_OCCASION_ID) {
+          this.core.store.setState(userId, "awaiting_occasion");
+          return void (await this.api.send(userId, "Напишите свой повод одной фразой, например: «Проводы коллеги в декрет»"));
+        }
+        const title = occasionTitle(arg ?? "");
+        if (!title) return this.occasions(userId, 0);
+        this.core.store.setOccasion(userId, title);
+        return this.askStory(userId);
+      }
       case "edit":
         this.core.store.setState(userId, "awaiting_feedback", Number(arg));
         return void (await this.api.send(userId, "Напишите, что изменить в тексте (имя, тон, добавить историю…)"));
@@ -174,9 +216,13 @@ export class Bot {
 
     const user = this.core.store.ensureUser(userId);
     try {
+      if (user.state === "awaiting_occasion" && text) {
+        this.core.store.setOccasion(userId, text.slice(0, 100));
+        return this.askStory(userId);
+      }
       if (user.state === "awaiting_story" && text) {
         await this.api.send(userId, "⏳ Пишу текст, подождите пару минут…");
-        return this.showDraft(userId, await this.core.createDraft(userId, text));
+        return this.showDraft(userId, await this.core.createDraft(userId, text, user.occasion));
       }
       if (user.state === "awaiting_feedback" && user.current_song_id && text) {
         await this.api.send(userId, "⏳ Переписываю текст…");

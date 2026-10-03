@@ -8,11 +8,11 @@ export interface LyricsResult {
 }
 
 export interface LyricsProvider {
-  generate(input: { story: string; previous?: string; feedback?: string }): Promise<LyricsResult>;
+  generate(input: { story: string; occasion?: string; previous?: string; feedback?: string }): Promise<LyricsResult>;
 }
 
 const SYSTEM = `Ты — автор персональных песен-подарков на русском языке.
-По рассказу пользователя (имя героя, черты, смешные истории, повод) напиши текст песни.
+По поводу и рассказу пользователя (имя героя, черты, смешные истории) напиши текст песни; настроение и лексика должны подходить поводу.
 Требования:
 - структура с метками на английском: [Verse], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus];
 - рифма, ритм, лёгкая шутка и тёплая интонация; используй конкретные детали из рассказа;
@@ -23,10 +23,11 @@ const SYSTEM = `Ты — автор персональных песен-пода
 export class ClaudeLyrics implements LyricsProvider {
   private client = new Anthropic({ apiKey: config.lyrics.apiKey });
 
-  async generate({ story, previous, feedback }: { story: string; previous?: string; feedback?: string }) {
+  async generate({ story, occasion, previous, feedback }: { story: string; occasion?: string; previous?: string; feedback?: string }) {
+    const head = occasion ? `Повод: ${occasion}\n\n` : "";
     const user = previous
-      ? `Рассказ:\n${story}\n\nТекущий текст:\n${previous}\n\nПравки пользователя:\n${feedback}\n\nПерепиши текст с учётом правок.`
-      : `Рассказ:\n${story}`;
+      ? `${head}Рассказ:\n${story}\n\nТекущий текст:\n${previous}\n\nПравки пользователя:\n${feedback}\n\nПерепиши текст с учётом правок.`
+      : `${head}Рассказ:\n${story}`;
     const msg = await this.client.messages.create({
       model: config.lyrics.model,
       max_tokens: 2000,

@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { PACKS, SONG_COST, config } from "./config.js";
 import { Core, CoreError } from "./core.js";
 import { verifyInitData } from "./max/initData.js";
+import { CUSTOM_OCCASION_ID, OCCASIONS, occasionTitle } from "./occasions.js";
 import { verifyResult } from "./services/robokassa.js";
 
 interface Deps {
@@ -51,6 +52,7 @@ export function buildServer({ core, isSubscribed }: Deps) {
     title: s.title,
     lyrics: s.lyrics,
     style: s.style,
+    occasion: s.occasion,
     status: s.status,
     audioUrl: s.audio_url,
     createdAt: s.created_at,
@@ -62,6 +64,7 @@ export function buildServer({ core, isSubscribed }: Deps) {
     balance: core.store.getUser(req.userId)!.balance,
     songCost: SONG_COST,
     packs: PACKS,
+    occasions: OCCASIONS,
     subscribed: await isSubscribed(req.userId),
     channels: config.max.requiredChannels.map((c) => c.url),
   }));
@@ -74,9 +77,11 @@ export function buildServer({ core, isSubscribed }: Deps) {
     return songView(s);
   });
 
-  app.post<{ Body: { story?: string } }>("/api/songs", async (req, reply) => {
+  app.post<{ Body: { story?: string; occasionId?: string; customOccasion?: string } }>("/api/songs", async (req, reply) => {
     if (!(await isSubscribed(req.userId))) return reply.code(403).send({ error: "not_subscribed" });
-    return songView(await core.createDraft(req.userId, req.body?.story ?? ""));
+    const { occasionId = "", customOccasion = "" } = req.body ?? {};
+    const occasion = occasionId === CUSTOM_OCCASION_ID ? customOccasion : (occasionTitle(occasionId) ?? "");
+    return songView(await core.createDraft(req.userId, req.body?.story ?? "", occasion));
   });
 
   app.post<{ Params: { id: string }; Body: { feedback?: string } }>("/api/songs/:id/revise", async (req) =>

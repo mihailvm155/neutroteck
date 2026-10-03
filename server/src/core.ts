@@ -26,12 +26,13 @@ export class Core {
   ) {}
 
   /** Новый черновик: рассказ → текст песни. */
-  async createDraft(userId: number, story: string): Promise<Song> {
+  async createDraft(userId: number, story: string, occasion = ""): Promise<Song> {
     story = story.trim();
     if (!story) throw new CoreError("empty", "Пустой рассказ");
     this.store.ensureUser(userId);
-    const song = this.store.createSong(userId, story);
-    const r = await this.lyrics.generate({ story });
+    occasion = occasion.trim().slice(0, 100);
+    const song = this.store.createSong(userId, story, occasion);
+    const r = await this.lyrics.generate({ story, occasion });
     this.store.updateSong(song.id, r);
     return this.store.getSong(song.id)!;
   }
@@ -41,7 +42,7 @@ export class Core {
     const song = this.owned(userId, songId);
     if (song.status !== "draft") throw new CoreError("bad_state", "Песня уже запущена");
     if (!feedback.trim()) throw new CoreError("empty", "Пустая правка");
-    const r = await this.lyrics.generate({ story: song.story, previous: song.lyrics, feedback });
+    const r = await this.lyrics.generate({ story: song.story, occasion: song.occasion, previous: song.lyrics, feedback });
     this.store.updateSong(song.id, r);
     return this.store.getSong(song.id)!;
   }
