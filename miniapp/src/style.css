@@ -1,0 +1,15 @@
+:root { --bg: #fff; --fg: #111; --accent: #6b4cff; --muted: #f3f2f8; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root { --bg: #15141a; --fg: #eee; --muted: #24222d; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
+main { max-width: 520px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+header { display: flex; justify-content: space-between; align-items: center; }
+button, .btn { display: block; width: 100%; padding: 14px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font: inherit; text-align: center; text-decoration: none; cursor: pointer; }
+button:disabled { opacity: .5; }
+button.link { background: none; color: var(--accent); width: auto; padding: 4px; }
+textarea { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #8884; background: var(--muted); color: inherit; font: inherit; }
+.lyrics { white-space: pre-wrap; background: var(--muted); padding: 12px; border-radius: 12px; font: inherit; }
+.card { background: var(--muted); padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; }
+.card audio { width: 100%; }
+.error { color: #d33; } .busy { color: var(--accent); }
+h2 { margin: 4px 0; }
