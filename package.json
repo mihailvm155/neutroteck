@@ -5,6 +5,7 @@
   "scripts": {
     "dev:server": "npm run dev -w server",
     "dev:miniapp": "npm run dev -w miniapp",
+    "demo": "npm run demo -w miniapp",
     "build": "npm run build -w miniapp",
     "start": "npm run start -w server",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w miniapp",

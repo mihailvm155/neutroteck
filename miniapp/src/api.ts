@@ -24,7 +24,7 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   return json as T;
 }
 
-export const api = {
+const realApi = {
   me: () => req<Me>("GET", "/api/me"),
   songs: () => req<Song[]>("GET", "/api/songs"),
   song: (id: number) => req<Song>("GET", `/api/songs/${id}`),
@@ -34,3 +34,7 @@ export const api = {
   confirm: (id: number) => req<Song>("POST", `/api/songs/${id}/confirm`),
   pay: (packId: string) => req<{ url: string }>("POST", "/api/pay", { packId }),
 };
+
+/** ?demo=1 — интерфейс на тестовых данных без сервера (см. demo.ts). */
+export const isDemo = new URLSearchParams(location.search).has("demo");
+export const api: typeof realApi = isDemo ? (await import("./demo")).demoApi : realApi;

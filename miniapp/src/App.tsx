@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, webApp, type Me, type Occasion, type Song } from "./api";
+import { api, isDemo, webApp, type Me, type Occasion, type Song } from "./api";
 
 type Screen = "home" | "create" | "draft" | "topup" | "songs";
 
@@ -77,6 +77,7 @@ export function App() {
           {me.packs.map((p) => (
             <button key={p.id} onClick={() => run("Создаю платёж…", async () => {
               const { url } = await api.pay(p.id);
+              if (isDemo) { await refresh(); return; }
               webApp ? webApp.openLink(url) : window.open(url, "_blank");
             })}>♥ {p.tokens} токенов — {p.priceRub}₽</button>
           ))}
